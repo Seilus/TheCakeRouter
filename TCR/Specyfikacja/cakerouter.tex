@@ -1,0 +1,32 @@
+\documentclass[13p, a4paper, oneside]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[MeX]{polski}
+\usepackage{graphicx}
+\usepackage{csvsimple}
+\usepackage[section]{placeins}
+\usepackage[top=0.5in, bottom=0.5in, left=1in, right=1in]{geometry}
+\usepackage{textcomp}
+
+\begin{document}
+\title{The Cake router}
+\author{Joanna Rymko \and Krzysztof Marut}
+\maketitle
+\paragraph{} Projekt polega na pozwoleniu na wysyłanie plików za pomocą pośredników, używając protokołu UDP. Ma on spełniać wymagania:
+\begin{itemize}
+\item Umożliwiamy przesyłanie komunikatów UDP
+\item Klient posiada listę wszystkich węzłów pośredniczących
+\item Wybiera w niej trasę przez N węzłów pośredniczących
+\item Do P1 wysyła komunikat zawierający listę węzłów pośrednich, ostatecznego odbiorce oraz dane do przesłania.
+\item Każdy z węzłów PN pamięta od kogo dostał w danym połączeniu informację.
+\item Możliwe by klient wysłał pakiet UDP od siebie do innego hosta (i otrzymał odpowiedź). Pakiet (i odpowiedź) musi przejść przez dwa węzły pośredniczące oraz węzeł końcowy.
+\item Sieć jest w stanie obsłużyć dwóch równolegle pracujących klientów.
+\end{itemize}
+\section{Specyfikacja}
+\paragraph{} Program klienta na początku działania wysyłać będzie (broadcast) informację na port, na którym nasłuchiwać będą wszystkie uruchomione węzły. Te w odpowiedzi wyślą informację zwrotną, która posłuży jako baza węzłów, spośród których będzie można wybrać dowolną ilość\footnote{Rozważane jest stworzenie rudymentarnego GUI by ułatwić korzystanie z programu}.
+\paragraph{}Wybrane węzły zostaną złożone najprawdopodniej za pomocą LinkedList. Zawierały będą one informację o adresie kolejnego węzła. Klient, i każdy kolejny węzeł zdejmie z kolejki element, i użyje przechowywanego tam adresu, by wysłać do niego resztę listy. Każdy z węzłów bedzie też przechowywał adres, z którego lista została do niego przesłana. Ostanim elementem listy będzie odbiorca wiadomości. Oczywiście poza listą przesyłany też będzie plik, przekonwertowany uprzednio na strumień bajtów.
+\subparagraph{}Jeśli klient końcowy otrzyma plik, wyśle informacje zwrotną, która przejdzie tą samą trasę w odwrotnym kierunku. 
+\paragraph{}By zapewnić obsługę więcej niż jednego klienta, we wszystkich warstwach wykorzystywane będą wątki runnable.
+\paragraph{}Odbiorca wiadomości, po jej otrzymaniu, poproszony zostanie o podanie ścieżki, do której chciałby, aby plik został zapisany. By wyeliminować zapisanie pliku z niewłaściwym rozszerzeniem, odbiorca będzie poinformowany o oryginalnej nazwie i rozszerzeniu pliku (i będzie miał opcję, by tejże nie zmieniać).
+
+\end{document}

@@ -1,0 +1,26 @@
+Klient ma listę pośredników
+
+GUI? Gdzie wybiera węzły i plik do wysłania
+Pośrednicy nie muszą mieć GUI
+
+Robi z tego kolejkę FIFO
+
+FIFO: W Javie LinkedList
+Każdy element zawiera swój adres
+
+Każdy kolejny pośrednik (i klient) robi removeFirst i podaje listę i strumień bajtów dalej
+
+Węzeł końcowy przekazuje tylko strumień bajtów
+
+Strumień bajtów do pliku przez FileOutputStream
+
+Wszystkie 3 w runnable'u żeby można było kilka połączeń na raz.
+
+
+Furthermore
+
+każdy pośrednik zapamiętuje adres, z którego został mu wysłany, i jeśli dostanie odpowiedź od następnego (węzeł końcowy od klienta końcowego)
+wysyła odpowiedź. Brak odpowiedzi zostanie poczytany jako nie otrzymanie wiadomości
+
+Jak otrzymać listę pośredników?
+Broadcast na port na którym działa Router, odpowiedź z adresami (i nazwami routerów- ewentualnie)
