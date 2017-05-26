@@ -18,11 +18,13 @@ public class Main{
 		Scanner keyScan=new Scanner(System.in);
 		String ownIP=keyScan.nextLine();
 		keyScan.close();
+
 		final DatagramSocket socket = new DatagramSocket(reportPort); 
 		final DatagramSocket fileSocket = new DatagramSocket(sendPort); 
         ExecutorService runnableExec = Executors.newFixedThreadPool(3);
         LinkedList<InetAddress> droga=new LinkedList<InetAddress>();
 		while(true){
+			//raportuje się jako węzeł do użycia w przesyłaniu
 			Runnable reporting = new Runnable() {
 				@Override
 				public void run() {
@@ -41,7 +43,7 @@ public class Main{
 				}
 			};
 			runnableExec.submit(reporting);
-			
+			//przesyła dalej plik, listę węzłów
 			Runnable sending=new Runnable(){
 				@Override
 				public void run() {
@@ -56,7 +58,7 @@ public class Main{
 						InetAddress nextAddress=nodeIP.getAddress();
 						
 						droga.add(InetAddress.getByName(ownIP));
-						for (int i=0; i<(number-1); i++){
+						for (int i=0; i<(number-2); i++){
 							fileSocket.receive(nodeIP);
 							droga.add(nodeIP.getAddress());
 						}
