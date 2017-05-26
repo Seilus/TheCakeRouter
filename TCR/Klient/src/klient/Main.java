@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -150,6 +149,15 @@ public class Main {
 				Path path=Paths.get(filePath);
 				byte[] parcel=Files.readAllBytes(path);
 				DatagramPacket fileSend=new DatagramPacket(parcel, parcel.length);
+				byte[] parcelSize = new byte[4];
+				parcelSize[0] = (byte) ((parcel.length & 0xFF000000) >> 24);
+				parcelSize[1] = (byte) ((parcel.length & 0x00FF0000) >> 16);
+				parcelSize[2] = (byte) ((parcel.length & 0x0000FF00) >> 8);
+				parcelSize[3] = (byte) ((parcel.length & 0x000000FF) >> 0);
+				DatagramPacket fileSize=new DatagramPacket(parcelSize, parcelSize.length);
+				fileSize.setAddress(firstNode);
+				fileSize.setPort(sendPort);
+				sendFileSocket.send(fileSize);
 				fileSend.setAddress(firstNode);
 				fileSend.setPort(sendPort);
 				sendFileSocket.send(fileSend);
@@ -158,8 +166,14 @@ public class Main {
 				System.out.println("Invalid path provided. Please provide valid file path.");
 			}
 		}
-		
+	
 		keyScan.close();
-		
+		while(true){
+			DatagramPacket response=new DatagramPacket(new byte[1], 1);
+			sendFileSocket.receive(response);
+			if(9==(int)response.getData()[0]);{
+				System.out.println("File Appears to have been successfully transmitted. Possibly");
+			}
+		}
     }
 }
