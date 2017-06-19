@@ -54,7 +54,7 @@ public class Main {
 			};
 			runnableExec.submit(listening);
 			try {
-				Thread.sleep(100);
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -98,7 +98,7 @@ public class Main {
 				}
 				
 			}
-        	//jeśli wybrane zostały wszystki węzły, pętla kończy się automatycznie
+        	//jeśli wybrane zostały wszystkie węzły, pętla kończy się automatycznie
         	if(k==listaWezlow.size()){
         		break;
         	}
@@ -107,45 +107,46 @@ public class Main {
 
         LinkedList<InetAddress> droga=new LinkedList<InetAddress>();
         //to było wpisane zanim dowiedziałem się, że można z każdego pakietu metodą odczytać IP. Głupie z mojej strony, że nie pomyślałem, że coś takiego jest. To jeszcze się zmodyfikuje, żeby usunąć zbędny przepływ danych
-        droga.add(InetAddress.getByName(ownIP));
+        
         for(int i=0; i<indeksy.length; i++){
         	if(indeksy[i]>-1){
         		droga.add(listaWezlow.get(indeksy[i]));
         	}
         }
-		for(int i=0; i<droga.size(); i++){
-			System.out.println(i+". "+droga.get(i));
-		}
+
 		//Nie jestem pewien, czy potrzebujemy aż dwóch socketów- być może trzeba będzie to zredukować
-		int sendPort=9014;
+		int sendPort=9015;
 		DatagramSocket sendFileSocket=new DatagramSocket(sendPort);
 		System.out.println("Please provide the desired IP address of the recipient:");
 		String recIP=keyScan.nextLine();
 		InetAddress recipientAddress=InetAddress.getByName(recIP);
-		droga.add(recipientAddress);
-		InetAddress firstNode=droga.removeFirst();
 		
+		InetAddress firstNode=droga.removeFirst();
+		droga.add(InetAddress.getByName(ownIP));
+		droga.addLast(recipientAddress);
+		System.out.println("Provide the path of the file that is to be sent:");
+		String filePath=keyScan.nextLine();
 		//wpierw przesyłamy liczbę węzłów, żeby wiadomo było, ile kolejnych pakietów zczytać jako adresy IP
 		byte nodeNum=(byte) droga.size();
-	    byte[] nodeNumByte=new byte[1];
-	    nodeNumByte[0]=nodeNum;
-	    System.out.println((int) nodeNumByte[0]);
+		byte[] nodeNumByte=new byte[1];
+		nodeNumByte[0]=nodeNum;
+		System.out.println((int)nodeNumByte[0]);
 		DatagramPacket noOfNodes=new DatagramPacket(nodeNumByte, 1);
 		noOfNodes.setAddress(firstNode);
 		noOfNodes.setPort(sendPort);
 		sendFileSocket.send(noOfNodes);
+		
 		//wysyłamy adresy węzłów
 		for(int i=0; i<droga.size(); i++){
 			DatagramPacket nodeSend=new DatagramPacket(droga.get(i).getAddress(), droga.get(i).getAddress().length);
 			nodeSend.setAddress(firstNode);
 			nodeSend.setPort(sendPort);
 			sendFileSocket.send(nodeSend);
-			System.out.println(droga.get(i).getHostAddress());
+			System.out.println("wysyłanie"+i+" "+droga.get(i).getHostAddress());
 		}
-		System.out.println("Provide the path of the file that is to be sent:");
 		//wysyłamy plik
 		while(true){
-			String filePath=keyScan.nextLine();
+			
 
 			try {
 				Path path=Paths.get(filePath);
@@ -153,6 +154,7 @@ public class Main {
 				DatagramPacket fileSend=new DatagramPacket(parcel, parcel.length);
 				//wysyłamy najpierw rozmiar pliku, do użycia w sockecie odbierającym
 				byte[] parcelSize = new byte[4];
+				System.out.println(parcel.length);
 				parcelSize[0] = (byte) ((parcel.length & 0xFF000000) >> 24);
 				parcelSize[1] = (byte) ((parcel.length & 0x00FF0000) >> 16);
 				parcelSize[2] = (byte) ((parcel.length & 0x0000FF00) >> 8);
@@ -171,12 +173,19 @@ public class Main {
 		}
 	
 		keyScan.close();
-		//technicznie jak wszystko pójdzie dobrze, przyjdzie w odpowiedzi jeden bajt: 1001, czyli 9- nie testowane
+		//technicznie jak wszystko pójdzie dobrze, przyjdzie w odpowiedzi jeden bajt: 00001001, czyli 9- nie testowane
 		while(true){
-			DatagramPacket response=new DatagramPacket(new byte[1], 1);
-			sendFileSocket.receive(response);
-			if(9==(int)response.getData()[0]);{
-				System.out.println("File Appears to have been successfully transmitted. Possibly");
+			try {
+				DatagramPacket response = new DatagramPacket(new byte[4], 4);
+				sendFileSocket.receive(response);
+				System.out.print((int) response.getData()[0]);
+				if (9 == (int) response.getData()[0]){
+					System.out.println("File Appears to have been successfully transmitted. Possibly");
+					
+				} 
+			} 
+			catch (IOException e){
+				e.printStackTrace();
 			}
 		}
     }
