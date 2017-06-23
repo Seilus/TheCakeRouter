@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -22,14 +21,17 @@ public class Main{
 
 		final DatagramSocket soc = new DatagramSocket(reportPort); 
 		final DatagramSocket filSoc = new DatagramSocket(sendPort); 
+		//tutaj na pewno nie ma być 1, bo ma obsługiwać kilka połączeń na raz, ale nawet z jednym nie udało mi się dobrze zrobić
         ExecutorService runnableExec = Executors.newFixedThreadPool(1);
         LinkedList<InetAddress> droga=new LinkedList<InetAddress>();
+        //nie wiem już, dlaczego ograniczyłem tego while'a, powinno raczej być po prostu (true)
         int i=0;
 		while(i<5){
 			i++;
 			
 			//raportuje się jako węzeł do użycia w przesyłaniu
 			Runnable reporting = new Runnable() {
+				//to akurat działa, w sensie wysyłający dostaje do listy adres jak należy
 				@Override
 				public void run() {
 					try {
@@ -56,8 +58,10 @@ public class Main{
 				//przesyła dalej plik, listę węzłów
 			Runnable sending = new Runnable() {
 				@Override
+				//tutaj zaczynają się już schody. Do pewnego momentu działa- wszystkie to wypisywanie na ekran tylko po to, żeby kontrolować, do którego momentu się wykonuje
 				public void run() {
 					try {
+						//pierwsze co dostaje to liczba adresów IP w liście
 						System.out.println("we're doing things!");
 						DatagramPacket noOfNodes = new DatagramPacket(new byte[1], 1);
 						filSoc.receive(noOfNodes);
@@ -67,29 +71,38 @@ public class Main{
 						System.out.println("we're doing things3!");
 						DatagramPacket nodeIP = new DatagramPacket(new byte[4], 4);
 						filSoc.receive(nodeIP);
+						//pierwszy otrzymany adres powinien być zwrotny
 						InetAddress returnAddress = nodeIP.getAddress();
 						System.out.println("return add:" + returnAddress.toString());
 						filSoc.receive(nodeIP);
+						//drugi to adres kolejnego węzła
 						System.out.println("we're doing things4!");
 						InetAddress nextAddress = nodeIP.getAddress();
 						
 						System.out.println("next add:" + nextAddress.toString());
+						//te dwa powyższe adresy dobrze wczytywał akurat
+						
+						//to nie wiem, jak działa, bo miałem za mało komputerów na testy
 						droga.add(InetAddress.getByName(ownIP));
 						for (int i = 0; i < (number - 2); i++) {
 							filSoc.receive(nodeIP);
 							droga.add(nodeIP.getAddress());
 						}
+						//otrzymuje rozmiar pliku (jako int) żeby wiedział, ile bajtów odebrać
 						DatagramPacket sizeOfFile = new DatagramPacket(new byte[4], 4);
 						filSoc.receive(sizeOfFile);
 						int fileSize = 0;
 						for (int i = 0; i < 4; i++) {
 							fileSize = (fileSize << 8) - Byte.MIN_VALUE + (int) sizeOfFile.getData()[i];
 						}
+						//dostaje plik
 						DatagramPacket sentFile = new DatagramPacket(new byte[fileSize], fileSize);
 						filSoc.receive(sentFile);
 						byte nodes = (byte) droga.size();
 						byte[] nodesNo = new byte[1];
 						nodesNo[1] = nodes;
+						//wysyła dalej analogicznie jak dostawał- ilość węzłów, węzły, rozmiar pliku i plik
+						//i teoretycznie odbiorca nawet coś czasami dostawał (nie zawsze) ale nie to, co powinien
 						noOfNodes.setData(nodesNo);
 						noOfNodes.setAddress(nextAddress);
 						noOfNodes.setPort(sendPort);
@@ -112,7 +125,6 @@ public class Main{
 						returnInfo.setAddress(returnAddress);
 						returnInfo.setPort(sendPort);
 						filSoc.send(returnInfo);
-						//    fileSocket.close();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
